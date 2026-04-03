@@ -1,14 +1,20 @@
 <%- include('layouts/header') %>
 <%- include('layouts/navbar') %>
-
 <h1><%= title %></h1>
 <% items.forEach(item => { %>
-    <div>
-        <h3><%= item.name %></h3>
-        <% if(item.hot) { %> <p style="color:red">🔥 Nổi bật</p> <% } %>
-        <a href="/detail/<%= item.id %>">Xem chi tiết</a>
-    </div>
-    <hr>
-<% }) %>
+<div>
+<h3><%= item.name %></h3>
+<p><%= item.description %></p>
+<p>Giá: <%= item.price %> VNĐ</p>
 
+<% if (item.hot) { %>
+
+<p>Trạng thái: Nổi bật</p>
+<% } else { %>
+<p>Trạng thái: Bình thường</p>
+<% } %>
+<a href="/detail/<%= item.id %>">Xem chi tiết</a>
+</div>
+<hr>
+<% }) %>
 <%- include('layouts/footer') %>
