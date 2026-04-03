@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Sửa bài viết</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+
+<h1>Sửa bài viết</h1>
+
+
+<form action="/blogposts/update/<%= post._id %>" method="POST">
+    <p>
+        Tiêu đề:
+        <input type="text" name="title" value="<%= post.title %>">
+    </p>
+
+
+    <p>
+        Nội dung:
+        <textarea name="body"><%= post.body %></textarea>
+    </p>
+
+
+    <button type="submit">Cập nhật</button>
+</form>
+
+
+<a href="/">Về trang chủ</a>
+
+
+</body>
+</html>
+
+
+
+

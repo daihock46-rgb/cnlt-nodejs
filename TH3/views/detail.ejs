@@ -1,0 +1,10 @@
+<%- include('layouts/header') %>
+<%- include('layouts/navbar') %>
+
+<h1><%= title %></h1>
+<h2><%= item.name %></h2> <p><b>Mô tả:</b> <%= item.description %></p>
+<p><b>Giá:</b> <%= item.price %> VNĐ</p> <% if (item.hot) { %>
+    <p style="color:red">Sản phẩm này đang rất HOT!</p>
+<% } %>
+
+<p><a href="/list">Quay lại danh sách</a></p> <%- include('layouts/footer') %>
