@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cấu Hình Hệ Thống ⚙️</title>
+    <style>
+        :root { --primary: #ff69b4; --secondary: #ffb6c1; --accent: #ff1493; --bg: #fff0f5; --text: #4a4a4a; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); margin: 0; color: var(--text); }
+        header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 2.5rem; text-align: center; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; box-shadow: 0 4px 15px rgba(255, 105, 180, 0.2); }
+        h1 { margin: 0; font-size: 2.2em; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+        nav { background: white; padding: 1rem; text-align: center; margin: -25px auto 20px; width: 70%; max-width: 600px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; z-index: 10; }
+        nav a { color: var(--primary); text-decoration: none; margin: 0 15px; font-weight: bold; transition: color 0.3s; }
+        nav a:hover { color: var(--accent); }
+        .container { max-width: 800px; margin: 30px auto; padding: 30px; background: white; border-radius: 20px; box-shadow: 0 5px 20px rgba(255, 182, 193, 0.3); }
+        h2 { border-bottom: 2px dashed var(--secondary); padding-bottom: 10px; color: var(--primary); }
+        pre { background: #fff0f5; color: var(--accent); padding: 15px; border-radius: 10px; overflow-x: auto; font-size: 14px; border: 1px dashed var(--primary); }
+        .info-box { background: white; border-left: 5px solid var(--primary); padding: 15px; margin-bottom: 20px; border-radius: 0 10px 10px 0; box-shadow: 0 4px 10px rgba(255, 182, 193, 0.2); }
+    </style>
+</head>
+<body>
+    <header><h1>⚙️ Cấu Hình Hệ Thống</h1></header>
+    <nav>
+        <a href="/">🏠 Trang Chủ</a>
+        <a href="/streams">🎀 Tạo Ghi Chú</a>
+        <a href="/events">📝 File Log</a>
+    </nav>
+    <div class="container">
+        <h2>Thông số kết nối</h2>
+        <div id="req-info"><p style="text-align: center; color: var(--secondary);">Đang lấy dữ liệu...</p></div>
+    </div>
+    <script>
+        fetch('/api/request-info' + window.location.search)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('req-info').innerHTML = `
+                    <div class="info-box">
+                        <p><strong>Phương thức:</strong> ${data.method}</p>
+                        <p><strong>Đường dẫn:</strong> ${data.url}</p>
+                        <p><strong>Tham số (Query):</strong> ${JSON.stringify(data.query)}</p>
+                    </div>
+                    <h3>🌸 Request Headers (Từ máy bạn gửi lên):</h3>
+                    <pre>${JSON.stringify(data.headers, null, 4)}</pre>
+                    <h3>🌸 Response Headers (Server trả về):</h3>
+                    <pre>${JSON.stringify(data.resHeaders, null, 4)}</pre>
+                `;
+            });
+    </script>
+</body>
+</html>

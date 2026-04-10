@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trạm Ghi Chú Của ThanhNgan</title>
+    <style>
+        :root {
+            --primary: #ff69b4; /* Hồng đậm */
+            --secondary: #ffb6c1; /* Hồng nhạt */
+            --accent: #ff1493; /* Hồng rực */
+            --bg: #fff0f5; /* Nền hồng phấn */
+            --text: #4a4a4a;
+        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); margin: 0; color: var(--text); }
+        header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 2.5rem; text-align: center; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; box-shadow: 0 4px 15px rgba(255, 105, 180, 0.2); }
+        h1 { margin: 0; font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.1); }
+        header p { font-size: 1.1em; opacity: 0.9; margin-top: 10px; }
+        
+        nav { background: white; padding: 1rem; text-align: center; margin: -25px auto 20px; width: 70%; max-width: 600px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); position: relative; z-index: 10; }
+        nav a { color: var(--primary); text-decoration: none; margin: 0 15px; font-weight: bold; transition: color 0.3s; }
+        nav a:hover { color: var(--accent); }
+        
+        .container { max-width: 800px; margin: 30px auto; padding: 25px; background: white; border-radius: 20px; box-shadow: 0 5px 20px rgba(255, 182, 193, 0.3); }
+        h2 { border-bottom: 2px dashed var(--secondary); padding-bottom: 10px; color: var(--primary); }
+
+        /* Nhóm nút tính năng giữ nguyên logic nhưng đổi màu */
+        .app-features { display: flex; gap: 12px; margin-bottom: 30px; border-bottom: 1px solid #ffe4e1; padding-bottom: 25px; justify-content: center; flex-wrap: wrap; }
+        .btn { padding: 10px 20px; border-radius: 25px; text-decoration: none; color: white; font-size: 14px; transition: 0.3s; background: var(--secondary); font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
+        .btn:hover { background: var(--primary); transform: translateY(-3px); box-shadow: 0 5px 12px rgba(255, 105, 180, 0.3); }
+
+        .note-entry { border: 2px solid #ffe4e1; border-radius: 15px; padding: 20px; margin-bottom: 20px; transition: 0.3s; background: #fffcfd; }
+        .note-entry:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 8px 20px rgba(255, 182, 193, 0.4); }
+        .note-entry h3 { color: var(--accent); margin: 0 0 10px 0; }
+        .note-entry .meta { font-size: 0.85rem; color: #a9a9a9; margin-bottom: 15px; }
+        .note-entry p { line-height: 1.6; }
+        
+        .note-images { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+        .note-images img { max-width: 150px; height: auto; border-radius: 10px; border: 2px dashed var(--secondary); object-fit: cover; }
+        .empty-msg { text-align: center; color: #ffb6c1; font-style: italic; margin: 40px 0; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🌸 Trạm Ghi Chú Nhỏ</h1>
+        <p>Nơi lưu trữ kỉ niệm và thông tin quan trọng</p>
+    </header>
+    
+    <nav>
+        <a href="/">🏠 Trang Chủ</a>
+        <a href="/streams">🎀 Tạo Ghi Chú</a>
+        <a href="/events">🔔 File Log </a>
+    </nav>
+
+    <div class="container">
+        <div class="app-features">
+            <a href="/request?monhoc=CNLTUD&nam=3" class="btn">🔍 Cấu Hình Hệ Thống</a>
+            <a href="/transform" target="_blank" class="btn">🕵️ Uppercase file Log</a>
+            <a href="/download-log" class="btn">⬇️ Xuất file Log</a>
+        </div>
+
+        <h2>Ghi chú của bạn</h2>
+        <div id="note-list">
+            <p class="empty-msg">Đang tải dữ liệu...</p>
+        </div>
+    </div>
+
+    <script>
+        fetch('/json').then(res => res.json()).then(notes => {
+            const list = document.getElementById('note-list');
+            if (notes.length === 0) return list.innerHTML = '<p class="empty-msg">Chưa có ghi chú nào. Hãy tạo một ghi chú dễ thương nhé! 🎀</p>';
+            list.innerHTML = notes.reverse().map(note => `
+                <div class="note-entry">
+                    <h3>${note.title}</h3>
+                    <div class="meta">📅 ${note.date} | 🆔 ${note.id}</div>
+                    <p>${note.content}</p>
+                    <div class="note-images">${note.images.map(img => `<img src="/image?name=${img}">`).join('')}</div>
+                </div>
+            `).join('');
+        });
+    </script>
+</body>
+</html>
