@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><title>BÀI THỰC HÀNH SỐ 9</title></head>
+<body>
+    <h2>BÀI THỰC HÀNH SỐ 9</h2> 
+    <input type="text" id="user" placeholder="Username">
+    <input type="password" id="pass" placeholder="Password">
+    <button onclick="login()">Đăng nhập</button>
+    <button onclick="logout()">Đăng xuất</button>
+    <p id="msg"></p>
+
+    <script>
+        async function login() {
+            const res = await fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: document.getElementById('user').value, password: document.getElementById('pass').value})
+            });
+            const data = await res.json();
+            document.getElementById('msg').innerText = data.message || data.error;
+        }
+
+        async function logout() {
+            const res = await fetch('/logout', { method: 'POST' });
+            const data = await res.json();
+            document.getElementById('msg').innerText = data.message;
+        }
+    </script>
+</body>
+</html>

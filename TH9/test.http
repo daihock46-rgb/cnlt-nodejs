@@ -1,0 +1,14 @@
+### 1. ĐĂNG NHẬP (Phần 1)
+POST http://localhost:3000/login
+Content-Type: application/json
+
+{
+    "username": "admin",
+    "password": "123456"
+}
+
+### 2. LẤY DANH SÁCH SINH VIÊN (Phần 2)
+GET http://localhost:3000/students?page=1&limit=2
+
+### 3. THỐNG KÊ (Phần 5)
+GET http://localhost:3000/students/stats
