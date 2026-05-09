@@ -1,3 +1,11 @@
+// Bơm thẻ Audio trực tiếp bằng code để chống lỗi tịt ngòi 100%
+if (!document.getElementById('sound-ting')) {
+    document.body.insertAdjacentHTML('beforeend', `
+        <audio id="sound-ting" src="https://assets.mixkit.com/sfx/preview/mixkit-software-interface-start-2574.mp3" preload="auto"></audio>
+        <audio id="sound-bloop" src="https://assets.mixkit.com/sfx/preview/mixkit-water-drop-alert-1300.mp3" preload="auto"></audio>
+    `);
+}
+
 const socket = io();
 
 let currentUsername = '';
@@ -10,7 +18,6 @@ let typingTimer;
 let targetReactMsg = null;
 const sounds = { toggle: true, volume: 1, type: 'sound-ting' };
 
-// Bắt chính xác toàn bộ ID HTML
 const els = {
     loginScreen: document.getElementById('login-screen'), 
     chatScreen: document.getElementById('chat-screen'),
@@ -52,17 +59,18 @@ document.getElementById('toggle-user-btn').onclick = function() {
 els.joinBtn.onclick = () => {
     const name = els.usernameInput.value.trim();
     if (name) {
-        // --- BẮT ĐẦU: HACK MỞ KHÓA ÂM THANH TRÌNH DUYỆT ---
-        const audio = document.getElementById(sounds.type);
-        if (audio) {
-            audio.volume = 0; // Tắt tiếng tạm thời để không phát ra tiếng ồn lúc đăng nhập
-            audio.play().then(() => {
-                audio.pause();
-                audio.currentTime = 0;
-                audio.volume = parseFloat(sounds.volume); // Trả lại mức âm lượng chuẩn
-            }).catch(e => console.log("Lỗi mở khóa", e));
-        }
-        // --- KẾT THÚC HACK ---
+        // --- HACK MỞ KHÓA ÂM THANH TRÌNH DUYỆT (Chống tịt ngòi) ---
+        ['sound-ting', 'sound-bloop'].forEach(id => {
+            const audio = document.getElementById(id);
+            if (audio) {
+                audio.volume = 0; 
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.volume = parseFloat(sounds.volume); 
+                }).catch(e => console.log("Lỗi mở khóa", e));
+            }
+        });
 
         currentUsername = name; socket.emit('join', name);
         els.loginScreen.style.display = 'none'; els.chatScreen.style.display = 'flex';
@@ -83,6 +91,18 @@ socket.on('force_update_room', (room) => {
     alert(`🔔 Bạn đã được thêm vào nhóm: ${room}`); 
     switchTarget(room);
 });
+
+// --- FIX MẤT NÚT CẢM XÚC/GHIM: LẮNG NGHE DỮ LIỆU TỪ SERVER ---
+socket.on('load_histories', (histories) => { 
+    localHistories = histories; 
+    if(currentTarget) loadChatBox(); 
+});
+
+socket.on('update_message_meta', ({ roomKey, history }) => { 
+    if (history) localHistories[roomKey] = history;
+    if (getRoomKey(currentTarget) === roomKey) loadChatBox(); 
+});
+// -------------------------------------------------------------
 
 function renderSidebar() {
     els.roomList.innerHTML = '';
@@ -125,14 +145,10 @@ function renderSidebar() {
     if (localDB.rooms.includes(currentTarget)) els.targetStatus.textContent = 'Nhóm chat';
 }
 
-// ----------------------------------------------------
-// KHU VỰC FIX LỖI GIẬT LAG & LIỆT NÚT GHIM
-// ----------------------------------------------------
-
 function switchTarget(target) {
     currentTarget = target;
     unreadCounts[target] = 0;
-    els.chatBox.innerHTML = ''; // CHỈ xóa trắng khi chuyển qua lại giữa những người khác nhau
+    els.chatBox.innerHTML = ''; 
     socket.emit('mark_read', { roomKey: getRoomKey(currentTarget), reader: currentUsername });
     renderSidebar();
     loadChatBox();
@@ -146,7 +162,6 @@ function loadChatBox() {
     const userDeletedTime = localDB.users[currentUsername]?.deletedRooms?.[roomKey] || 0;
     const validHistory = history.filter(msg => msg.timestamp > userDeletedTime);
 
-    // CẬP NHẬT THANH GHIM ĐÚNG CHUẨN ẢNH (Chữ đỏ, Nền vàng)
     const pinnedMsg = validHistory.find(m => m.pinned);
     els.pinnedBar.style.display = pinnedMsg ? 'flex' : 'none';
     if(pinnedMsg) {
@@ -161,23 +176,19 @@ function renderMessage(msg) {
     const existingRow = document.getElementById(`msg-${msg.id}`);
     const roomKey = getRoomKey(currentTarget);
 
-    // NẾU TIN NHẮN ĐÃ TỒN TẠI TRÊN MÀN HÌNH -> CHỈ CẬP NHẬT CẢM XÚC/TRẠNG THÁI CHỨ KHÔNG XÓA (Chống giật)
     if (existingRow) {
-        // Cập nhật chữ Đã xem
         const statusEl = existingRow.querySelector('.status-text');
         if (statusEl) statusEl.textContent = msg.sender === currentUsername ? (msg.status === 'seen' ? 'Đã xem' : 'Đã gửi') : '';
         
-        // Cập nhật Cảm xúc
         const bubble = existingRow.querySelector('.msg-bubble');
         const oldReact = bubble.querySelector('.reaction-bar');
-        if (oldReact) oldReact.remove(); // Gỡ tim cũ
+        if (oldReact) oldReact.remove();
 
         const reacts = Object.values(msg.reactions || {}).filter(r => r);
         if (reacts.length > 0) {
             const reactsHTML = `<div class="reaction-bar act-react" data-id="${msg.id}" style="position: absolute; bottom: -12px; right: 15px; background: white; border-radius: 12px; padding: 2px 8px; border: 1px solid #ddd; cursor: pointer; display: flex; gap: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 2;">${reacts.join('')}</div>`;
             bubble.insertAdjacentHTML('beforeend', reactsHTML);
             
-            // Gắn lại sự kiện cho tim mới
             bubble.querySelector('.act-react').onclick = (e) => {
                 e.stopPropagation();
                 targetReactMsg = { roomKey: msg.roomKey, msgId: msg.id };
@@ -189,7 +200,6 @@ function renderMessage(msg) {
         return; 
     }
 
-    // NẾU LÀ TIN NHẮN MỚI -> TẠO BONG BÓNG MỚI
     const isMine = msg.sender === currentUsername;
     const div = document.createElement('div');
     div.className = `msg-row ${isMine ? 'mine' : 'theirs'}`;
@@ -236,16 +246,14 @@ function renderMessage(msg) {
 
     const replyText = msg.type === 'text' ? msg.content : '[Đính kèm]';
 
-    // Đã thêm e.stopPropagation() để các nút không bị liệt
-   div.querySelectorAll('.btn-react, .reaction-bar').forEach(el => {
+    div.querySelectorAll('.btn-react, .reaction-bar').forEach(el => {
         el.onclick = (e) => {
-            e.stopPropagation(); // Phép thuật chống liệt nút (Cực kỳ quan trọng)
-            
+            e.stopPropagation(); 
             targetReactMsg = { roomKey: msg.roomKey, msgId: msg.id };
             els.reactPopup.style.display = 'flex';
-            els.reactPopup.style.position = 'fixed'; // Ép bảng nổi lên trên cùng màn hình
+            els.reactPopup.style.position = 'fixed'; 
             els.reactPopup.style.zIndex = '99999';
-            els.reactPopup.style.left = (e.clientX - 60) + 'px'; // Lấy đúng tọa độ chuột
+            els.reactPopup.style.left = (e.clientX - 60) + 'px'; 
             els.reactPopup.style.top = (e.clientY - 40) + 'px';
         };
     });
@@ -262,20 +270,15 @@ function renderMessage(msg) {
         else el.onclick = handler;
     });
 
-    // 3. CHỨC NĂNG GHIM/BỎ GHIM
     div.querySelectorAll('.btn-pin').forEach(el => {
         el.onclick = (e) => { 
-            e.stopPropagation(); // Phép thuật chống liệt nút
+            e.stopPropagation(); 
             socket.emit('pin_message', { roomKey: msg.roomKey, msgId: msg.id }); 
         };
     });
 
     els.chatBox.scrollTo({ top: els.chatBox.scrollHeight, behavior: 'smooth' });
 }
-
-// ----------------------------------------------------
-// PHẦN CÒN LẠI HOẠT ĐỘNG HOÀN HẢO GIỮ NGUYÊN
-// ----------------------------------------------------
 
 function sendData(type, content, fileName = null) {
     if (!content) return;
@@ -306,10 +309,47 @@ function handleFileUpload(file) {
     reader.readAsDataURL(file);
 }
 
+// =========================================================
+// CHỨC NĂNG GHI ÂM (ĐÃ BẢO TỒN NGUYÊN VẸN CỦA BẠN)
+// =========================================================
 let mediaRecorder; let audioChunks = []; let recordInterval;
 
+document.getElementById('record-btn').onclick = async () => {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        document.getElementById('recording-ui').style.display = 'flex';
+        els.messageInput.style.display = 'none';
+        els.sendBtn.style.display = 'none';
+        
+        let secs = 0; document.getElementById('record-time').textContent = '0:00';
+        recordInterval = setInterval(() => { secs++; document.getElementById('record-time').textContent = `0:${secs < 10 ? '0':''}${secs}`; }, 1000);
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.start();
+    } catch(err) { alert('Cần cấp quyền Micro!'); }
+};
 
-// --- BẮT ĐẦU: CODE MỚI CHO MENU CÀI ĐẶT ÂM THANH ---
+const closeRecordUI = () => {
+    clearInterval(recordInterval);
+    document.getElementById('recording-ui').style.display = 'none';
+    els.messageInput.style.display = 'block';
+    els.sendBtn.style.display = 'flex';
+};
+
+document.getElementById('stop-record').onclick = () => {
+    if(mediaRecorder.state === "inactive") return;
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onload = (evt) => sendData('audio', evt.target.result, 'VoiceRecord.webm');
+        reader.readAsDataURL(blob);
+    };
+    mediaRecorder.stop(); closeRecordUI();
+};
+document.getElementById('cancel-record').onclick = () => { mediaRecorder.stop(); closeRecordUI(); };
+
+
 // =========================================================
 // CÀI ĐẶT ÂM THANH (CÓ NÚT NGHE THỬ + FIX LỖI ÂM LƯỢNG)
 // =========================================================
@@ -339,40 +379,24 @@ document.getElementById('open-settings').onclick = (e) => {
     // Lưu cài đặt ngay khi bạn kéo/chọn
     document.getElementById('set-sound-toggle').onchange = (e) => sounds.toggle = e.target.checked;
     document.getElementById('set-sound-type').onchange = (e) => sounds.type = e.target.value;
-    document.getElementById('set-sound-vol').onchange = (e) => sounds.volume = parseFloat(e.target.value); // Ép về dạng số chuẩn
+    
+    document.getElementById('set-sound-vol').oninput = (e) => {
+        sounds.volume = parseFloat(e.target.value); 
+        const audio = document.getElementById(sounds.type);
+        if(audio) audio.volume = sounds.volume; // Cập nhật volume trực tiếp
+    };
 
-    // Nút nghe thử (Giúp bạn biết chắc chắn loa đã kêu)
+    // Nút nghe thử giúp bạn biết chắc chắn loa đã kêu
     document.getElementById('test-sound-btn').onclick = () => {
         if (!sounds.toggle) return alert("❌ Bạn đang TẮT thông báo nên không thể nghe thử!");
-        
         const audio = document.getElementById(sounds.type);
         if (audio) {
             audio.volume = parseFloat(sounds.volume);
-            audio.currentTime = 0; // Tua lại đầu bài để nghe liên tục
+            audio.currentTime = 0; 
             audio.play().catch(err => alert("Trình duyệt đang chặn âm thanh!"));
         }
     };
 };
-// --- KẾT THÚC KHỐI CÀI ĐẶT ---
-
-const closeRecordUI = () => {
-    clearInterval(recordInterval);
-    document.getElementById('recording-ui').style.display = 'none';
-    els.messageInput.style.display = 'block';
-    els.sendBtn.style.display = 'flex';
-};
-
-document.getElementById('stop-record').onclick = () => {
-    if(mediaRecorder.state === "inactive") return;
-    mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunks, { type: 'audio/webm' });
-        const reader = new FileReader();
-        reader.onload = (evt) => sendData('audio', evt.target.result, 'VoiceRecord.webm');
-        reader.readAsDataURL(blob);
-    };
-    mediaRecorder.stop(); closeRecordUI();
-};
-document.getElementById('cancel-record').onclick = () => { mediaRecorder.stop(); closeRecordUI(); };
 
 socket.on('receive_message', (msg) => {
     if (!localHistories[msg.roomKey]) localHistories[msg.roomKey] = [];
@@ -385,32 +409,21 @@ socket.on('receive_message', (msg) => {
         const source = localDB.rooms.includes(msg.roomKey) ? msg.roomKey : msg.sender;
         unreadCounts[source] = (unreadCounts[source] || 0) + 1;
         renderSidebar();
-        if (sounds.toggle && msg.sender !== currentUsername) {
-            const audio = document.getElementById(sounds.type);
-            audio.volume = sounds.volume;
-            audio.play().catch(e => {});
+    }
+
+    // FIX LỖI TỊT NGÒI ÂM THANH KHI NHẬN TIN NHẮN TỚI
+    if (sounds.toggle && msg.sender !== currentUsername) {
+        const audio = document.getElementById(sounds.type);
+        if (audio) {
+            audio.volume = parseFloat(sounds.volume) || 1; // Luôn đảm bảo có volume
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log('Chặn âm thanh', e));
         }
     }
-    if (!localHistories[msg.roomKey].find(m => m.id === msg.id)) localHistories[msg.roomKey].push(msg);
-
-        // ĐOẠN NÀY LÀ ĐỂ PHÁT NHẠC KHI CÓ TIN NHẮN TỚI
-        if (sounds.toggle && msg.sender !== currentUsername) {
-            const audio = document.getElementById(sounds.type);
-            if (audio) {
-                audio.volume = parseFloat(sounds.volume);
-                audio.currentTime = 0;
-                audio.play().catch(e => console.log('Chặn âm thanh'));
-            }
-        }
-    
 });
 
 socket.on('messages_read', ({ roomKey, reader }) => { 
     if (localHistories[roomKey]) localHistories[roomKey].forEach(m => { if(m.sender !== reader) m.status = 'seen'; });
-    if (getRoomKey(currentTarget) === roomKey) loadChatBox(); 
-});
-
-socket.on('update_message_meta', ({ roomKey }) => { 
     if (getRoomKey(currentTarget) === roomKey) loadChatBox(); 
 });
 
@@ -441,7 +454,6 @@ document.querySelectorAll('.react-btn').forEach(btn => {
     };
 });
 
-
 window.addEventListener('click', (e) => { 
     if(!e.target.closest('.action-icons') && !e.target.closest('.reaction-bar') && !e.target.closest('#reaction-popup')) {
         els.reactPopup.style.display = 'none'; 
@@ -454,18 +466,6 @@ document.querySelectorAll('.emoji-item').forEach(el => el.onclick = () => { els.
 const openModal = (title, html) => { els.modalTitle.textContent = title; els.modalBody.innerHTML = html; els.modal.style.display = 'flex'; };
 document.getElementById('close-modal').onclick = () => els.modal.style.display = 'none';
 document.getElementById('toggle-theme').onclick = (e) => { e.preventDefault(); document.body.classList.toggle('dark-mode'); };
-
-document.getElementById('open-settings').onclick = (e) => {
-    e.preventDefault();
-    openModal('Cài đặt Âm thanh', `
-        <div class="setting-item"><label>Bật thông báo</label><input type="checkbox" id="set-sound-toggle" ${sounds.toggle ? 'checked' : ''}></div>
-        <div class="setting-item"><label>Loại chuông</label><select id="set-sound-type"><option value="sound-ting" ${sounds.type==='sound-ting'?'selected':''}>Ting Ting</option><option value="sound-bloop" ${sounds.type==='sound-bloop'?'selected':''}>Bloop</option></select></div>
-        <div class="setting-item"><label>Âm lượng</label><input type="range" id="set-sound-vol" min="0" max="1" step="0.1" value="${sounds.volume}"></div>
-    `);
-    document.getElementById('set-sound-toggle').onchange = (e) => sounds.toggle = e.target.checked;
-    document.getElementById('set-sound-type').onchange = (e) => sounds.type = e.target.value;
-    document.getElementById('set-sound-vol').onchange = (e) => sounds.volume = e.target.value;
-};
 
 document.getElementById('create-room-btn').onclick = (e) => {
     e.preventDefault(); 

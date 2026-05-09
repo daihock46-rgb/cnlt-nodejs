@@ -72,15 +72,16 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- FIX: GỬI LẠI TOÀN BỘ HISTORY KHI THẢ TIM & GHIM ---
-   socket.on('react_message', ({ roomKey, msgId, emoji }) => {
+    // --- FIX: GỬI LẠI TOÀN BỘ HISTORY MỚI KHI THẢ TIM & GHIM ---
+    socket.on('react_message', ({ roomKey, msgId, emoji }) => {
         const msg = db.histories[roomKey]?.find(m => m.id === msgId);
         if (msg) {
+            if (!msg.reactions) msg.reactions = {}; // Bảo vệ lỗi thiếu dữ liệu
             if (msg.reactions[socket.username] === emoji) delete msg.reactions[socket.username];
             else msg.reactions[socket.username] = emoji;
             saveDB();
-            // FIX Ở ĐÂY: Gửi lệnh load_histories để trình duyệt nhận được mảng dữ liệu mới nhất
-            io.emit('load_histories', db.histories); 
+            // Gửi dữ liệu mới nhất (history) về
+            io.emit('update_message_meta', { roomKey, history: db.histories[roomKey] }); 
         }
     });
 
@@ -88,8 +89,8 @@ io.on('connection', (socket) => {
         if (db.histories[roomKey]) {
             db.histories[roomKey].forEach(m => m.pinned = (m.id === msgId ? !m.pinned : false)); 
             saveDB();
-            // FIX Ở ĐÂY: Tương tự, gửi mảng dữ liệu mới nhất về
-            io.emit('load_histories', db.histories); 
+            // Gửi dữ liệu mới nhất (history) về
+            io.emit('update_message_meta', { roomKey, history: db.histories[roomKey] }); 
         }
     });
     // --------------------------------------------------------

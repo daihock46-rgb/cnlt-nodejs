@@ -5,12 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lemon Chat</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Ép menu luôn nổi lên trên cùng, không bị khung chat đè lên */
+        .dropdown-content {
+            z-index: 99999 !important;
+        }
+        /* Ép thanh tiêu đề nằm trên khung chat */
+        .chat-header, .sidebar-header {
+            position: relative;
+            z-index: 9999 !important;
+        }
+    </style>
 </head>
 <body>
-   <audio id="sound-ting" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
-    <audio id="sound-bloop" src="https://www.soundjay.com/nature/sounds/water-drop-1.mp3" preload="auto"></audio>
-    
     <div id="login-screen">
         <div class="login-box">
             <div class="logo-container"><h1 class="logo-text">🍋 LEMON CHAT</h1></div>
@@ -27,7 +36,6 @@
                 <h3 id="my-name" class="text-truncate"></h3>
                 <div class="dropdown" style="margin-left: auto;">
                     <button class="icon-btn">⚙️</button>
-                    
                     <div class="dropdown-content">
                         <a href="#" id="toggle-theme">🌙 Đổi chế độ Sáng/Tối</a>
                         <a href="#" id="open-settings">🔊 Cài đặt Âm thanh</a>
@@ -37,15 +45,11 @@
             </div>
             
             <div class="list-section">
-                <div class="section-header" id="toggle-room-btn">
-                    <span>Phòng Chat</span> <span class="toggle-icon">▼</span>
-                </div>
+                <div class="section-header" id="toggle-room-btn"><span>Phòng Chat</span> <span class="toggle-icon">▼</span></div>
                 <ul id="room-list"></ul>
             </div>
             <div class="list-section">
-                <div class="section-header" id="toggle-user-btn">
-                    <span>Trò chuyện riêng</span> <span class="toggle-icon">▼</span>
-                </div>
+                <div class="section-header" id="toggle-user-btn"><span>Trò chuyện riêng</span> <span class="toggle-icon">▼</span></div>
                 <ul id="online-users"></ul>
             </div>
         </div>
@@ -68,8 +72,13 @@
                 </div>
             </div>
 
-           <div id="pinned-bar" style="display: none; padding: 12px 25px; background: #FFF9C4; border-bottom: 1px solid var(--border); align-items: center; font-size: 14px; position: sticky; top: 0; z-index: 10;">
+            <div id="pinned-bar" style="display: none; padding: 10px 20px; background: #FFF9C4; border-bottom: 1px solid #ddd; align-items: center; justify-content: space-between; font-size: 14px; position: sticky; top: 0; z-index: 10;">
+                <div>
+                    <span style="color: #dc3545; font-weight: bold;"><i class="fa-solid fa-thumbtack"></i> Đã ghim: </span> 
+                    <span id="pinned-text" style="font-weight: 500;"></span>
                 </div>
+                <button id="unpin-btn" style="background:none; border:none; cursor:pointer; color:gray;" title="Bỏ ghim"><i class="fa-solid fa-xmark"></i></button>
+            </div>
 
             <div id="chat-box"></div>
 
@@ -78,12 +87,12 @@
                 <button id="cancel-reply" class="icon-btn">✕</button>
             </div>
 
-            <div id="reaction-popup">
-                <span class="react-btn">❤️</span>
-                <span class="react-btn">👍</span>
-                <span class="react-btn">😂</span>
-                <span class="react-btn">😮</span>
-                <span class="react-btn">😢</span>
+            <div id="reaction-popup" style="position: fixed; background: white; padding: 8px 12px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); display: none; gap: 10px; z-index: 99999; border: 1px solid #ddd;">
+                <span class="react-btn" style="font-size:24px; cursor:pointer;">❤️</span>
+                <span class="react-btn" style="font-size:24px; cursor:pointer;">👍</span>
+                <span class="react-btn" style="font-size:24px; cursor:pointer;">😂</span>
+                <span class="react-btn" style="font-size:24px; cursor:pointer;">😮</span>
+                <span class="react-btn" style="font-size:24px; cursor:pointer;">😢</span>
             </div>
 
             <div id="typing-indicator-box"><span id="typing-indicator" style="display: none;"></span></div>
@@ -100,7 +109,7 @@
                 
                 <input type="text" id="message-input" placeholder="Nhập tin nhắn (Enter để gửi)..." autocomplete="off">
                 
-                <button class="tool-btn" id="record-btn" title="Ghi âm giọng nói">🎤</button>
+                <button class="tool-btn" id="record-btn" title="Ghi âm">🎤</button>
                 <div id="recording-ui" style="display: none;">
                     <div class="rec-status"><span class="pulse-dot"></span> <span id="record-time">0:00</span></div>
                     <button id="stop-record" class="action-btn send">Gửi</button>
@@ -114,10 +123,7 @@
 
     <div id="common-modal" class="modal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">Tiêu đề</h3>
-                <button id="close-modal" class="icon-btn">✕</button>
-            </div>
+            <div class="modal-header"><h3 id="modal-title">Tiêu đề</h3><button id="close-modal" class="icon-btn">✕</button></div>
             <div id="modal-body"></div>
         </div>
     </div>
