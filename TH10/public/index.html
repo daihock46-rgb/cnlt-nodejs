@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lemon Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+   <audio id="sound-ting" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
+    <audio id="sound-bloop" src="https://www.soundjay.com/nature/sounds/water-drop-1.mp3" preload="auto"></audio>
+    
+    <div id="login-screen">
+        <div class="login-box">
+            <div class="logo-container"><h1 class="logo-text">🍋 LEMON CHAT</h1></div>
+            <p>Bài thực hành số 10</p>
+            <input type="text" id="username-input" placeholder="Nhập tên của bạn..." autocomplete="off">
+            <button id="join-btn">Vào Trò Chuyện</button>
+        </div>
+    </div>
+
+    <div id="chat-screen" style="display: none;">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="avatar" id="my-avatar"></div>
+                <h3 id="my-name" class="text-truncate"></h3>
+                <div class="dropdown" style="margin-left: auto;">
+                    <button class="icon-btn">⚙️</button>
+                    
+                    <div class="dropdown-content">
+                        <a href="#" id="toggle-theme">🌙 Đổi chế độ Sáng/Tối</a>
+                        <a href="#" id="open-settings">🔊 Cài đặt Âm thanh</a>
+                        <a href="#" id="create-room-btn">➕ Tạo Nhóm Mới</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="list-section">
+                <div class="section-header" id="toggle-room-btn">
+                    <span>Phòng Chat</span> <span class="toggle-icon">▼</span>
+                </div>
+                <ul id="room-list"></ul>
+            </div>
+            <div class="list-section">
+                <div class="section-header" id="toggle-user-btn">
+                    <span>Trò chuyện riêng</span> <span class="toggle-icon">▼</span>
+                </div>
+                <ul id="online-users"></ul>
+            </div>
+        </div>
+
+        <div class="main-chat" id="main-chat-area">
+            <div class="chat-header">
+                <div class="header-info">
+                    <h3 id="current-target-name">Nhóm chung</h3>
+                    <div id="target-status">Đang hoạt động</div>
+                </div>
+                <div class="dropdown">
+                    <button class="icon-btn" title="Tùy chọn">⋮</button>
+                    <div class="dropdown-content">
+                        <a href="#" id="menu-gallery">🖼️ Xem Ảnh/File</a>
+                        <a href="#" id="menu-add-member">👤 Thêm vào nhóm</a>
+                        <a href="#" id="menu-rename-room">✏️ Đổi tên Nhóm</a>
+                        <a href="#" id="menu-nickname">🏷️ Đổi Biệt danh</a>
+                        <a href="#" id="menu-delete-chat" style="color: #e74c3c;">🗑️ Xóa hội thoại</a>
+                    </div>
+                </div>
+            </div>
+
+           <div id="pinned-bar" style="display: none; padding: 12px 25px; background: #FFF9C4; border-bottom: 1px solid var(--border); align-items: center; font-size: 14px; position: sticky; top: 0; z-index: 10;">
+                </div>
+
+            <div id="chat-box"></div>
+
+            <div id="reply-bar" style="display: none;">
+                <div class="reply-content text-truncate">Đang trả lời: <strong id="reply-text"></strong></div>
+                <button id="cancel-reply" class="icon-btn">✕</button>
+            </div>
+
+            <div id="reaction-popup">
+                <span class="react-btn">❤️</span>
+                <span class="react-btn">👍</span>
+                <span class="react-btn">😂</span>
+                <span class="react-btn">😮</span>
+                <span class="react-btn">😢</span>
+            </div>
+
+            <div id="typing-indicator-box"><span id="typing-indicator" style="display: none;"></span></div>
+
+            <div class="chat-input-area">
+                <button class="tool-btn" id="emoji-toggle">😀</button>
+                <div id="emoji-picker" style="display: none;">
+                    <span class="emoji-item">❤️</span><span class="emoji-item">😂</span><span class="emoji-item">👍</span>
+                    <span class="emoji-item">😢</span><span class="emoji-item">😡</span><span class="emoji-item">🎉</span>
+                </div>
+
+                <label for="file-upload" class="tool-btn">📎</label>
+                <input type="file" id="file-upload" style="display: none;">
+                
+                <input type="text" id="message-input" placeholder="Nhập tin nhắn (Enter để gửi)..." autocomplete="off">
+                
+                <button class="tool-btn" id="record-btn" title="Ghi âm giọng nói">🎤</button>
+                <div id="recording-ui" style="display: none;">
+                    <div class="rec-status"><span class="pulse-dot"></span> <span id="record-time">0:00</span></div>
+                    <button id="stop-record" class="action-btn send">Gửi</button>
+                    <button id="cancel-record" class="action-btn cancel">Hủy</button>
+                </div>
+
+                <button id="send-btn" class="send-icon">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="common-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Tiêu đề</h3>
+                <button id="close-modal" class="icon-btn">✕</button>
+            </div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
